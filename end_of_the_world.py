@@ -16,6 +16,7 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, silhouette_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.semi_supervised import LabelSpreading
 
 DATA = Path("data")
 OUT = Path("outputs")
@@ -31,6 +32,7 @@ HORIZON = 2100                   # forecast horizon
 #               (every indicator is oriented so higher = more stress).
 #   "pca"     = one PCA over all indicators (PC1 ends up as a time trend).
 INDEX_MODE = "domains"
+SEED_SHARE = 0.20   # label spreading: share of each period that counts as a known (confident) label
 DOMAINS = {
     "climate": ["temp_anomaly", "co2_ppm", "co2_per_capita", "methane", "nitrous_oxide"],
     "mortality": ["death_rate"],
@@ -227,6 +229,51 @@ ax[0].plot(choice.k, choice.inertia, "o-"); ax[0].set(title="Elbow", xlabel="k")
 ax[1].plot(choice.k, choice.silhouette, "o-"); ax[1].set(title="Silhouette", xlabel="k")
 fig.savefig(OUT / "kmeans_choice.png", dpi=150, bbox_inches="tight")
 
+# %% 4b. Semi-supervised label spreading --------------------------------
+# Only a few years are treated as "known": the 20% of each K-means period that
+# sit closest to the middle of their group (the most confident years). All other
+# years are hidden, and label spreading has to give them a label using what the
+# four domain scores say about how similar years are.
+ls = None
+if INDEX_MODE == "domains":
+    code = {"calm": 0, "stressed": 1, "crisis": 2}
+    decode = {v: k for k, v in code.items()}
+    feat = domain_scores(df)
+    feat_scaler = StandardScaler().fit(feat)
+    F = feat_scaler.transform(feat)
+    y_km = period.map(code).values
+    y_semi = np.full(len(y_km), -1)                       # -1 = unknown
+    for lab in (0, 1, 2):
+        ids = np.where(y_km == lab)[0]
+        centre = index.values[ids].mean()
+        n_keep = max(2, int(round(SEED_SHARE * len(ids))))
+        y_semi[ids[np.argsort(np.abs(index.values[ids] - centre))[:n_keep]]] = lab
+    print(f"Known labels: {int((y_semi >= 0).sum())} of {len(y_semi)} years")
+
+    ls = LabelSpreading(kernel="knn", n_neighbors=5, alpha=0.2, max_iter=1000).fit(F, y_semi)
+    # Second model on the index value alone, used only to label FUTURE years.
+    # (History's crisis years were pandemic years; a future climate-driven crisis
+    # is a pattern the four-domain model has never seen, but its index value is comparable.)
+    ls_idx = LabelSpreading(kernel="knn", n_neighbors=5, alpha=0.2, max_iter=1000).fit(
+        index.values.reshape(-1, 1), y_semi)
+    spread = pd.Series(ls.transduction_, index=df.index).map(decode).rename("spread_label")
+    hidden = y_semi < 0
+    agree_hidden = (spread[hidden] == period[hidden]).mean()
+    print(f"Label spreading agrees with K-means on {agree_hidden:.0%} of the hidden years")
+    print(pd.crosstab(period[hidden], spread[hidden], rownames=["K-means"], colnames=["spreading"]))
+    diff = df.index[(spread != period).values]
+    print("Years where the two methods disagree:", list(diff))
+    pd.concat([index, period, spread], axis=1).to_csv(OUT / "label_spreading.csv")
+
+    fig, ax = plt.subplots(figsize=(9, 4))
+    ax.scatter(index.index, index.values, c=spread.map(colors), s=25)
+    ax.plot(index.index, index.values, color="gray", alpha=0.3)
+    known = index[y_semi >= 0]
+    ax.scatter(known.index, known.values, facecolors="none", edgecolors="black", s=70, label="known (seed) years")
+    ax.set(title="Periods found by label spreading", xlabel="Year", ylabel="Stress index")
+    ax.legend()
+    fig.savefig(OUT / "periods_label_spreading.png", dpi=150, bbox_inches="tight")
+
 # %% 5. Trend fitting: linear vs polynomial (time-based split) ----------
 tr = index[index.index <= TRAIN_END]
 te = index[index.index > TRAIN_END]
@@ -243,6 +290,27 @@ for name, deg in [("linear", 1), ("poly2", 2), ("poly3", 3)]:
 trend_table = pd.DataFrame(results, columns=["model", "MAE", "RMSE"])
 print(trend_table.round(3))
 trend_table.to_csv(OUT / "trend_errors.csv", index=False)
+
+# --- Fair evaluation: compare with naive guesses, and also without the pandemic ---
+def eval_series(series, label):
+    tr_, te_ = series[series.index <= TRAIN_END], series[series.index > TRAIN_END]
+    out = []
+    for nm, deg in [("linear", 1), ("poly2", 2), ("poly3", 3)]:
+        pr = np.polyval(np.polyfit(tr_.index - START, tr_.values, deg), te_.index - START)
+        out.append((label, nm, mean_absolute_error(te_, pr), np.sqrt(mean_squared_error(te_, pr))))
+    for nm, val in [("naive: last value", tr_.iloc[-1]), ("naive: training mean", tr_.mean())]:
+        pr = np.full(len(te_), val)
+        out.append((label, nm, mean_absolute_error(te_, pr), np.sqrt(mean_squared_error(te_, pr))))
+    return out
+
+eval_rows = eval_series(index, "full index")
+if INDEX_MODE == "domains" and "pandemic" in ds.columns:
+    s_raw = ds.drop(columns="pandemic").mean(axis=1)
+    structural = pd.Series((s_raw - s_raw.min()) / (s_raw.max() - s_raw.min()) * 100, index=df.index)
+    eval_rows += eval_series(structural, "index without pandemic")
+vs_naive = pd.DataFrame(eval_rows, columns=["target", "model", "MAE", "RMSE"])
+print(vs_naive.round(2).to_string(index=False))
+vs_naive.to_csv(OUT / "trend_vs_naive.csv", index=False)
 
 future = np.arange(START, HORIZON + 1)
 best = trend_table.sort_values("RMSE").iloc[0]["model"]
@@ -284,18 +352,27 @@ for sname, mult in SCENARIOS.items():
     s_fut = s[s.index > END]                       # peak within the forecast period only
     peak_year = int(s_fut.idxmax())
     reached_horizon = peak_year == HORIZON
+    first_crisis = "n/a"
+    if ls is not None:
+        fut_labels = pd.Series(ls_idx.predict(s.loc[future_years].values.reshape(-1, 1)),
+                               index=future_years)
+        crisis_years = fut_labels[fut_labels == 2]
+        first_crisis = int(crisis_years.index[0]) if len(crisis_years) else "none by 2100"
     peaks.append((sname, mult, peak_year, round(float(s_fut.max()), 1),
-                  round(float(s.loc[HORIZON]), 1),
+                  round(float(s.loc[HORIZON]), 1), first_crisis,
                   "no peak before horizon (still rising)" if reached_horizon else "peak"))
 
 peak_table = pd.DataFrame(peaks, columns=["scenario", "climate_slope_x", "forecast_peak_year",
-                                          "forecast_peak_value", "value_2100", "note"])
+                                          "forecast_peak_value", "value_2100",
+                                          "first_crisis_year_spreading", "note"])
 print(peak_table)
 peak_table.to_csv(OUT / "scenario_peaks.csv", index=False)
 
 fig, ax = plt.subplots(figsize=(10, 4.5))
+ax.plot(index.index, index.values, color="black", label="history")
 for sname, s in scenario_index.items():
-    ax.plot(s.index, s.values, label=sname)
+    s_f = s[s.index >= END]
+    ax.plot(s_f.index, s_f.values, label=sname)
 ax.axvline(END, color="k", ls=":", alpha=0.5)
 ax.set(title="Global Stress Index forecast by scenario", xlabel="Year", ylabel="Index")
 ax.legend(); ax.grid(alpha=0.3)

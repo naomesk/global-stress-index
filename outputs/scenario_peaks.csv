@@ -1,4 +1,4 @@
-scenario,climate_slope_x,forecast_peak_year,forecast_peak_value,value_2100,note
-optimistic,0.5,2100,52.5,52.5,no peak before horizon (still rising)
-baseline,1.0,2100,87.1,87.1,no peak before horizon (still rising)
-pessimistic,1.5,2100,121.8,121.8,no peak before horizon (still rising)
+scenario,climate_slope_x,forecast_peak_year,forecast_peak_value,value_2100,first_crisis_year_spreading,note
+optimistic,0.5,2100,52.5,52.5,none by 2100,no peak before horizon (still rising)
+baseline,1.0,2100,87.1,87.1,2083,no peak before horizon (still rising)
+pessimistic,1.5,2100,121.8,121.8,2058,no peak before horizon (still rising)
