@@ -76,4 +76,6 @@ Or run the scripts one by one in this order: climate scripts, `clean_demography.
 
 ## Team
 
-[Add team member names here]
+- Nur Shevval Rasim Kyzy
+- Naomi Eskinder Woudneh
+- Noé Challa
