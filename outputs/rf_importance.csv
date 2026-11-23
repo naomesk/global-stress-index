@@ -1,0 +1,17 @@
+,0
+temp_anomaly_lag1,0.188115192689727
+disaster_log_per_million_lag1,0.15642056166154458
+temp_anomaly_lag2,0.13769982039199527
+co2_per_capita_lag1,0.12207383575220007
+disaster_log_per_million_lag2,0.06510220486633987
+co2_per_capita_lag2,0.0611148455110312
+methane_lag2,0.05689953912765719
+death_rate_lag1,0.04050911322327078
+methane_lag1,0.039485400951509445
+nitrous_oxide_lag2,0.03749418774637899
+death_rate_lag2,0.032581358018994956
+co2_ppm_lag2,0.02258574852131797
+co2_ppm_lag1,0.02140522079049317
+nitrous_oxide_lag1,0.018512970747539485
+covid_log_per_million_lag1,0.0
+covid_log_per_million_lag2,0.0
