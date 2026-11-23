@@ -54,8 +54,20 @@ Or run the scripts one by one in this order: climate scripts, `clean_demography.
 5. **Semi-supervised label spreading** starts from the 20% most typical years of each period
    and labels the rest, as a check on the K-means periods.
 6. **Linear and polynomial regression** and a **Random Forest with lag features**, evaluated with a
-   time-based train/test split (train 1959-2015, test 2016-2024) using MAE and RMSE, compared with naive baselines.
+   time-based train/test split using MAE and RMSE, compared with naive baselines (see below).
 7. **Scenarios**: climate trends are slowed (x0.5) or accelerated (x1.5) and the index is projected to 2100.
+
+## Train / test split
+
+| Set | Years | Count | Share |
+|---|---|---|---|
+| Training | 1959-2015 | 57 | about 86% |
+| Test | 2016-2024 | 9 | about 14% |
+
+The split is by time and the data is **not shuffled**. This is a time series, and a random split would let
+the model see years on both sides of each test year, which makes the errors look better than they are.
+The Random Forest uses the previous 1-2 years as inputs, so it has about 55 usable training rows.
+The label spreading check uses its own split: 14 known years (about 21%) and 52 hidden years (about 79%).
 
 ## Main results
 
@@ -76,6 +88,7 @@ Or run the scripts one by one in this order: climate scripts, `clean_demography.
 
 ## Team
 
+[Add team member names here]
 - Nur Shevval Rasim Kyzy
 - Naomi Eskinder Woudneh
 - Noé Challa
