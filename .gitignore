@@ -1,0 +1,11 @@
+# virtual environment and caches
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# big raw files (GitHub rejects files over 100 MB; re-download them from the source)
+data/raw/owid-covid-data.csv
+
+# optional: uncomment to also keep all raw downloads out of the repo
+# data/raw/
