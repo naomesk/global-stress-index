@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team guide | Global Stress Index</title>
+<meta name="description" content="Set up the code base, run your module, bring in teammates modules, and publish the report.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="guidepage">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <a class="brand" href="index.html">Global Stress Index</a>
+  <nav aria-label="Site">
+    <a href="report.html">Report</a>
+    <a href="guide.html" aria-current="page">Team guide</a>
+    <a href="downloads/End_of_the_World_Report.docx">Word file</a>
+    <a class="repo" href="#" data-repo>Code</a>
+  </nav>
+</header>
+<div class="guide">
+<nav class="sidenav" aria-label="Guide sections"><p>On this page</p>
+<a href="#setup">1. Set up the base</a><a href="#mine">2. Run your module</a><a href="#integrate">3. Bring in teammates' modules</a><a href="#combine">4. Combine</a><a href="#report">5. Update the report</a><a href="#publish">6. Publish the site</a><a href="#trouble">Troubleshooting</a></nav>
+<main id="main">
+<h1>Team guide</h1>
+<p>You own the disasters and pandemic module and you combine everyone's work. This page takes you from an empty folder to a published report. Every command runs from the project folder.</p>
+<div class="callout warn"><b>Real data first.</b> The code was tested on synthetic stub data only; the numbers in the report came from an earlier run on real downloads. Before you trust any result, run on real data and check that it matches the report (section 2).</div>
+
+<section id="setup"><h2>1. Set up the base</h2>
+<div class="steps">
+<div class="step"><p><b>Install Python 3.11 or newer</b> and Git, then open a terminal in the folder where you keep projects.</p></div>
+<div class="step"><p><b>Create the repository.</b> On GitHub choose New repository, name it <code>global-stress-index</code>, keep it public (free GitHub Pages needs that), and add no files. Then unzip the code base into a folder of the same name and push it:</p>
+<pre><code>cd global-stress-index
+git init -b main
+git add .
+git commit -m "Add code base"
+git remote add origin https://github.com/YOUR-USER/global-stress-index.git
+git push -u origin main</code></pre>
+<p>The <code>.gitignore</code> keeps raw downloads, virtual environments and zip files out of the repository.</p></div>
+<div class="step"><p><b>Make a virtual environment and install the packages.</b></p>
+<pre><code>python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt</code></pre></div>
+<div class="step"><p><b>Run the tests.</b> They build their own stub data in a temporary folder, so they never touch your files. All should pass.</p>
+<pre><code>python -m pytest -q</code></pre></div>
+<div class="step"><p><b>Try the whole pipeline on stub data.</b> Every figure carries a STUB watermark so nobody mistakes it for a finding.</p>
+<pre><code>python make_stub_data.py
+python run_all.py
+python make_stub_data.py --clean     # remove stub files before using real data</code></pre></div>
+<div class="step"><p><b>Share it with the team.</b> Add Naomi and Noé under Settings, Collaborators. Each person works on a branch and opens a pull request into <code>main</code>:</p>
+<pre><code>git checkout -b climate-module
+# ...work...
+git add data/processed outputs/climate
+git commit -m "Climate module on real data"
+git push -u origin climate-module</code></pre>
+<p>Processed files and each member's <code>outputs/</code> folder are small, so committing them is fine; raw downloads are not committed.</p></div>
+</div>
+<p>Send teammates the setup message: <i>clone the repo, make the environment, run the tests, then run your own module. Send me <code>data/processed/&lt;domain&gt;.csv</code>, <code>&lt;domain&gt;_meta.json</code> and your <code>outputs/</code> folder.</i></p>
+</section>
+
+<section id="mine"><h2>2. Work on your module: disasters and pandemic</h2>
+<h3>Download the three raw files</h3>
+<table><thead><tr><th>File</th><th>Where from</th><th>Save as</th></tr></thead><tbody>
+<tr><td>OWID CO₂ data (world population)</td><td><a href="https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv">owid-co2-data.csv</a></td><td><code>data/raw/owid-co2-data.csv</code></td></tr>
+<tr><td>Natural-disaster deaths per year, world</td><td>Our World in Data chart download (<a href="https://ourworldindata.org/natural-disasters">natural disasters</a>) or an EM-DAT export (<a href="https://public.emdat.be">public.emdat.be</a>, free account)</td><td>one <code>.csv</code> or <code>.xlsx</code> in <code>data/raw/disasters/</code></td></tr>
+<tr><td>OWID COVID-19 data</td><td><a href="https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-data.csv">owid-covid-data.csv</a></td><td><code>data/raw/covid/owid-covid-data.csv</code></td></tr>
+</tbody></table>
+<p>If a link has moved, search the site for the dataset name. If the OWID disaster file has several death columns, set <code>OWID_DISASTER_COLUMN</code> in <code>config.py</code>.</p>
+<h3>Run it</h3>
+<pre><code>python -m modules.disasters_pandemics</code></pre>
+<p>If a file is missing, the error says which one and where to save it. When it finishes you have:</p>
+<table><thead><tr><th>Output</th><th>What it is</th></tr></thead><tbody>
+<tr><td><code>data/processed/disasters.csv</code>, <code>pandemic.csv</code></td><td>Yearly table, standardized, plus the domain score</td></tr>
+<tr><td><code>data/processed/*_meta.json</code></td><td>Weights, scenario rules, score mean and spread</td></tr>
+<tr><td><code>outputs/disasters_pandemics/</code></td><td>Cleaning log, test errors, K-means selection, Random Forest importances, figures: your own report evidence</td></tr>
+</tbody></table>
+<h3>Check it against the report</h3>
+<ul>
+<li>The cleaning log shows how many values were filled or flagged. Know these numbers; a reader may ask.</li>
+<li>Disaster deaths per million are very skewed. After log(1 + x) the skewness should drop from about 3.2 to about 1.0.</li>
+<li>The pandemic score should sit flat until 2019 and peak in 2021 near 4.6.</li>
+<li>The mortality score should fall from about 3.2 in 1959&ndash;1960; the climate score should rise from about &minus;1.9 to +1.9.</li>
+</ul>
+<p>Small differences are normal if a source was revised. A big one (a pandemic peak in the wrong year, a skew that stays high) means a wrong column or unit. Check it before moving on.</p>
+<h3>Check the hand-off file</h3>
+<pre><code>python -m common.contract data/processed/disasters.csv
+python -m common.contract data/processed/pandemic.csv</code></pre>
+<p>It prints OK or every problem it finds.</p>
+</section>
+
+<section id="integrate"><h2>3. Bring in teammates' modules</h2>
+<p>The finished module may not follow the hand-off format. <code>tools/adopt.py</code> checks what you were sent and converts it. It never edits their file: it keeps a copy in <code>data/submissions/&lt;domain&gt;/</code> and writes every decision to <code>outputs/adopted/&lt;domain&gt;/ADOPTION_REPORT.md</code>. Put each file in a folder outside <code>data/processed</code> first (for example <code>incoming/</code>).</p>
+<div class="steps">
+<div class="step"><p><b>See where you stand.</b></p><pre><code>python -m tools.adopt status</code></pre><p>It lists each domain as OK, MISSING or INVALID, and warns if some domains were built from stub data and others from real data.</p></div>
+<div class="step"><p><b>Look at the file you received.</b></p><pre><code>python -m tools.adopt inspect incoming/their_file.csv</code></pre><p>It finds the year column, lists missing years, and shows each column's range, skew and trend. It then suggests a <code>convert</code> command.</p></div>
+<div class="step"><p><b>Pick the case that matches</b> and run it. Then run <code>status</code> again.</p></div>
+</div>
+
+<details open><summary>A. They followed the format (a <code>.csv</code> and a <code>_meta.json</code>)</summary>
+<pre><code>python -m tools.adopt install --domain climate --file incoming/climate.csv --meta incoming/climate_meta.json</code></pre>
+<p>It copies both files into <code>data/processed/</code> and validates them. If validation fails the message lists every problem; fix it with case B on their raw columns, or ask them to rerun.</p></details>
+
+<details><summary>B. They sent cleaned indicators, but not in the format</summary>
+<p>Typical: a column called <code>Year</code>, a gap or two, other column names, no standardizing. Decide for each column whether <b>higher means more stress</b>. If lower means more stress (life expectancy, sea ice), pass it to <code>--flip</code>.</p>
+<pre><code>python -m tools.adopt convert --domain climate --file incoming/climate_raw.csv \
+    --indicators temp_anomaly,co2_ppm,sea_ice --flip sea_ice --pca</code></pre>
+<p>Useful options:</p>
+<table><thead><tr><th>Option</th><th>Use it when</th></tr></thead><tbody>
+<tr><td><code>--flip a,b</code></td><td>Lower values of these columns mean more stress</td></tr>
+<tr><td><code>--pca</code></td><td>Weight the indicators with the first principal component (the climate method in the report)</td></tr>
+<tr><td><code>--weights a=2,b=1</code></td><td>You want unequal weights</td></tr>
+<tr><td><code>--aux a</code></td><td>Keep a column but leave it out of the score (weight 0), like birth rate</td></tr>
+<tr><td><code>--log1p a</code></td><td>The column is a very skewed count</td></tr>
+<tr><td><code>--zero-fill a</code></td><td>A missing year means &ldquo;nothing recorded&rdquo;</td></tr>
+<tr><td><code>--max-edge-fill N</code></td><td>The file starts late or ends early by a few years (default 1; more is refused)</td></tr>
+<tr><td><code>--projection a=min</code></td><td>Choose the 2100 rule: <code>trend</code>, <code>trend_scaled</code> or <code>min</code></td></tr>
+</tbody></table>
+<p>Defaults: climate indicators use <code>trend_scaled</code>, pandemic uses <code>min</code>, everything else <code>trend</code>. A column named <code>score</code> or ending in <code>_z</code> is renamed with a <code>submitted_</code> prefix so it cannot clash with the format.</p></details>
+
+<details><summary>C. They only sent a finished score</summary>
+<pre><code>python -m tools.adopt convert --domain pandemic --file incoming/pandemic.csv --score-only burden</code></pre>
+<p>The score is standardized and used as it is. The report will say the module's internals are theirs; ask them for a sentence describing how they built it.</p>
+<div class="callout warn">With a single score the 2100 scenarios can only extend its trend, so the result is less informative than with raw indicators. Ask for the indicators if you can.</div></details>
+
+<details><summary>D. They only have a notebook or nothing yet</summary>
+<p>Ask them to save one table: a year column and the indicators they used, as <code>.csv</code> or <code>.xlsx</code>. In a notebook that is <code>df.to_csv("file.csv", index=False)</code>. Then use case B. If they have nothing, they can run the shared module for their domain on the real downloads (<code>python -m modules.climate</code> or <code>modules.demographics</code>); that is the fallback.</p></details>
+
+<details><summary>E. Monthly or daily data, or a different year range</summary>
+<p>Several rows in one year need a rule for combining them:</p>
+<pre><code>python -m tools.adopt convert --domain mortality --file incoming/monthly.csv --agg mean</code></pre>
+<p>Use <code>mean</code> for rates and levels, <code>sum</code> for counts. Dates in any common format are read; the tool takes the year. If the file does not cover 1959&ndash;2024 it stops and tells you; it never invents years beyond the edge-fill limit. Excel files work too (<code>--sheet NAME</code>).</p></details>
+
+<h3>Read the adoption report and the warnings</h3>
+<p>After each conversion read the printed <b>CHECK</b> lines and <code>ADOPTION_REPORT.md</code>. The tool warns when:</p>
+<ul>
+<li>a climate indicator falls over time (the sign may be wrong);</li>
+<li>a column is very skewed (skew above 2);</li>
+<li>the pandemic score peaks outside 2020&ndash;2023;</li>
+<li>a PCA loading is not positive, meaning one indicator moves against the others.</li></ul>
+<p>Every flip, fill and weight must go into the Methodology of the report so that it describes what was actually done.</p>
+</section>
+
+<section id="combine"><h2>4. Combine</h2>
+<pre><code>python -m tools.adopt status       # all four domains OK, none mixed with stub data
+python combine.py</code></pre>
+<p><code>combine.py</code> stops with a clear message if a domain is missing, invalid, or built from stub data while others are real. On success it writes <code>outputs/combined/</code>:</p>
+<p><code>index.csv</code>, <code>periods.csv</code>, <code>kmeans_selection.csv</code>, <code>label_spreading_confusion.csv</code>, <code>scenarios.csv</code>, <code>scenario_summary.csv</code>, <code>test_errors.csv</code>, <code>rf_importance.csv</code>, <code>results_summary.json</code> and figures 1&ndash;5.</p>
+<p>Open <code>results_summary.json</code> first. If <code>"data_is_stub"</code> is <code>true</code>, none of it is a finding.</p>
+</section>
+
+<section id="report"><h2>5. Update the report</h2>
+<p>The Word report holds the numbers from the earlier real run. After your combined run, compare and update. Anything that changes in the numbers must change in the text too.</p>
+<table><thead><tr><th>Report item</th><th>Comes from</th></tr></thead><tbody>
+<tr><td>Abstract, Results: peak year</td><td><code>index_peak_year</code> in <code>results_summary.json</code></td></tr>
+<tr><td>Abstract, Table 2, Figure 3: periods</td><td><code>period_counts</code>, <code>kmeans_selection.csv</code>, <code>periods.csv</code></td></tr>
+<tr><td>Abstract, Table 3, Figure 4: label spreading</td><td><code>label_spreading</code>, <code>label_spreading_confusion.csv</code></td></tr>
+<tr><td>Abstract, Table 4, Figure 5: scenarios</td><td><code>scenarios</code> in the summary, <code>scenario_summary.csv</code>, <code>scenarios.csv</code></td></tr>
+<tr><td>Table 5: model errors</td><td><code>test_errors.csv</code>, <code>best_full_index_model</code></td></tr>
+<tr><td>Which Indicators Matter</td><td><code>rf_importance.csv</code>, <code>top_rf_features</code></td></tr>
+<tr><td>Figures 1&ndash;5</td><td><code>outputs/combined/fig1..fig5</code></td></tr>
+<tr><td>Table 1 and Methodology</td><td>What each member actually used; every <code>ADOPTION_REPORT.md</code></td></tr>
+</tbody></table>
+<div class="steps">
+<div class="step"><p>Edit the Word file: replace the figures, the tables and every number in the text that changed. Search for the old numbers (for example &ldquo;2021&rdquo;, &ldquo;88%&rdquo;) to be sure none is left.</p></div>
+<div class="step"><p>Each member writes their own results paragraph from their <code>outputs/&lt;module&gt;/</code> tables. Keep the writing in one voice when you merge.</p></div>
+<div class="step"><p>Rebuild the web page from the Word file (needs <a href="https://pandoc.org/installing.html">pandoc</a>):</p>
+<pre><code>python -m tools.build_report_page path/to/End_of_the_World_Report.docx</code></pre>
+<p>That rewrites <code>docs/report.html</code>, <code>docs/figures/</code> and the downloadable Word file. The home page's findings table is typed by hand in <code>docs/index.html</code>; update it to match.</p></div>
+<div class="step"><p>Open <code>docs/index.html</code> in a browser and read the report page once, including the equations and the tables.</p></div>
+</div>
+</section>
+
+<section id="publish"><h2>6. Publish on GitHub Pages</h2>
+<div class="steps">
+<div class="step"><p>Commit and push the <code>docs/</code> folder to <code>main</code>.</p>
+<pre><code>git add docs
+git commit -m "Update report page"
+git push</code></pre></div>
+<div class="step"><p>On GitHub open <b>Settings, Pages</b>. Under Build and deployment choose <b>Deploy from a branch</b>, branch <code>main</code>, folder <code>/docs</code>, and Save.</p></div>
+<div class="step"><p>Wait a minute or two. The site is at <code data-repo-url>https://YOUR-USER.github.io/global-stress-index/</code>. Put that link in the course submission.</p></div>
+</div>
+<p>The <code>docs/.nojekyll</code> file tells GitHub to serve the files as they are. All links in the site are relative, so it works under the repository's sub-path.</p>
+</section>
+
+<section id="trouble"><h2>Troubleshooting</h2>
+<table><thead><tr><th>You see</th><th>Do this</th></tr></thead><tbody>
+<tr><td><code>MissingRawFile</code> naming a file</td><td>Download it and save it at the path in the message (section 2).</td></tr>
+<tr><td><code>ModuleNotFoundError</code></td><td>Activate the virtual environment, then <code>pip install -r requirements.txt</code>.</td></tr>
+<tr><td>Python cannot find <code>common</code> or <code>tools</code></td><td>Run from the project folder, with <code>python -m ...</code>.</td></tr>
+<tr><td>&ldquo;Mixed data&rdquo; from <code>combine.py</code></td><td>Some modules ran on stub data. Run <code>python make_stub_data.py --clean</code>, rerun those modules on real downloads.</td></tr>
+<tr><td>&ldquo;Several rows share one year&rdquo;</td><td>Add <code>--agg mean</code> (or <code>sum</code> for counts).</td></tr>
+<tr><td>&ldquo;Cannot continue&rdquo; on short coverage</td><td>Ask for 1959&ndash;2024 data, use <code>--zero-fill</code> if missing means nothing recorded, or allow edge years with <code>--max-edge-fill</code>.</td></tr>
+<tr><td>Pandemic score peaks in the wrong year</td><td>Wrong column or units. Compare with the report: the peak is 2021.</td></tr>
+<tr><td>Site shows a 404</td><td>Pages must be set to <code>main</code>, <code>/docs</code>; <code>index.html</code> must sit directly in <code>docs/</code>; the repo must be public on a free plan.</td></tr>
+<tr><td>Equations look broken</td><td>The page uses MathML, which current Chrome, Edge, Firefox and Safari draw. Update an old browser.</td></tr>
+</tbody></table>
+</section>
+</main></div>
+<footer class="foot">Woosong University · Introduction to Machine Learning · Fall 2026</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>End of the World: A Global Stress Index and Peak Forecasting | Report</title>
+<meta name="description" content="Final report: a yearly Global Stress Index for 1959-2024.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="reportpage">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <a class="brand" href="index.html">Global Stress Index</a>
+  <nav aria-label="Site">
+    <a href="report.html" aria-current="page">Report</a>
+    <a href="guide.html">Team guide</a>
+    <a href="downloads/End_of_the_World_Report.docx">Word file</a>
+    <a class="repo" href="#" data-repo>Code</a>
+  </nav>
+</header>
+<div class="paper">
+<aside class="toc" aria-label="Contents"><p>Contents</p><ol><li class="l1"><a href="#abstract">Abstract</a></li><li class="l1"><a href="#introduction">Introduction</a></li><li class="l2"><a href="#background">Background</a></li><li class="l2"><a href="#problem-statement-and-challenges">Problem Statement and Challenges</a></li><li class="l2"><a href="#existing-solutions-and-limitations">Existing Solutions and Limitations</a></li><li class="l2"><a href="#our-contributions">Our Contributions</a></li><li class="l1"><a href="#related-works">Related Works</a></li><li class="l1"><a href="#proposed-methodology">Proposed Methodology</a></li><li class="l2"><a href="#data">Data</a></li><li class="l2"><a href="#preprocessing">Preprocessing</a></li><li class="l2"><a href="#building-the-global-stress-index">Building the Global Stress Index</a></li><li class="l2"><a href="#periods-and-label-spreading">Periods and Label Spreading</a></li><li class="l2"><a href="#trend-fits-and-scenarios">Trend Fits and Scenarios</a></li><li class="l2"><a href="#evaluation">Evaluation</a></li><li class="l2"><a href="#software-and-reproducibility">Software and Reproducibility</a></li><li class="l1"><a href="#experiments-and-result-analysis">Experiments and Result Analysis</a></li><li class="l2"><a href="#the-global-stress-index">The Global Stress Index</a></li><li class="l2"><a href="#calm-stressed-and-crisis-periods">Calm, Stressed, and Crisis Periods</a></li><li class="l2"><a href="#forecast-scenarios-to-2100">Forecast Scenarios to 2100</a></li><li class="l2"><a href="#model-evaluation">Model Evaluation</a></li><li class="l2"><a href="#which-indicators-matter">Which Indicators Matter</a></li><li class="l1"><a href="#discussion">Discussion</a></li><li class="l2"><a href="#interpretation-of-the-index">Interpretation of the Index</a></li><li class="l2"><a href="#comparison-with-earlier-work">Comparison With Earlier Work</a></li><li class="l2"><a href="#limitations">Limitations</a></li><li class="l1"><a href="#conclusion">Conclusion</a></li><li class="l2"><a href="#future-work">Future Work</a></li><li class="l1"><a href="#references">References</a></li><li class="l1"><a href="#appendix-a">Appendix A</a></li></ol></aside>
+<main id="main" class="article">
+<div class="titleblock">
+<h1 class="title">End of the World: A Global Stress Index and Peak Forecasting</h1>
+<p class="authors">Nur Shevval Rasim Kyzy, Naomi Eskinder Woudneh, and Noé Challa</p>
+<p class="affil">Woosong University<br>Introduction to Machine Learning (Fall 2026)<br>November 2026</p>
+<p class="dl"><a href="downloads/End_of_the_World_Report.docx">Download the Word version</a></p>
+</div>
+<h1 class="sec" id="abstract">Abstract</h1>
+<p>We built a yearly Global Stress Index for 1959–2024 that combines
+climate, mortality, disaster and pandemic data, and used it to ask when
+global stress might peak. Principal component analysis (PCA) compressed
+five redundant climate indicators into one score, which we averaged with
+mortality, disaster and pandemic scores so that each domain counted
+equally. K-means clustering grouped the 66 years into 45 calm, 15
+stressed and 6 crisis years, and semi-supervised label spreading,
+started from only 14 known years, recovered 88% of the labels of the
+remaining 52 years. The index peaked in 2021, the COVID-19 pandemic.
+Projected to 2100 under optimistic, baseline and pessimistic climate
+scenarios, the index did not peak: it reached about 52, 87 and 122
+points on a 0–100 historical scale, and first reached crisis level in
+about 2083 (baseline) and 2058 (pessimistic), but not before 2100
+(optimistic). On the 2016–2024 test years, our regression and Random
+Forest models did not clearly beat naive guesses, because the test
+window contains the only pandemic. The project is a data-driven
+hypothesis, not a prediction of a real “end of the world.”</p>
+<p><em>Keywords:</em> global stress index, PCA, K-means, label
+spreading, forecasting, scenarios</p>
+<h1 class="sec" id="introduction">Introduction</h1>
+<p>Global stress is rising on several fronts at once, yet each front is
+usually measured on its own. This project builds one yearly index from
+four of them and asks when the combined stress might peak.</p>
+<h2 id="background">Background</h2>
+<p>Global well-being depends on several pressures that act at the same
+time. Disasters such as earthquakes, floods, storms and droughts cause
+deaths and economic damage every year (Ritchie et al., 2022). Rising
+atmospheric CO₂ and a growing global temperature anomaly strain
+ecosystems and public health (IPCC, 2021). Birth rates, death rates and
+life expectancy decide how vulnerable or resilient a society is when
+something goes wrong. Pandemics add a fourth pressure: COVID-19 showed
+that one outbreak can disrupt health systems, economies and daily life
+across the entire planet (Mathieu et al., 2020). These risks are usually
+studied separately, but in reality they interact and compound each
+other.</p>
+<h2 id="problem-statement-and-challenges">Problem Statement and
+Challenges</h2>
+<p>We found three main challenges.</p>
+<ol type="1">
+<li><p><strong>No combined measure.</strong> No single indicator joins
+disaster, climate, demographic and pandemic pressure into one global
+picture, and each field keeps its own indicators.</p></li>
+<li><p><strong>No labels.</strong> An “end of the world” event has never
+happened, so there is no historical target for a normal supervised
+model. This is why our approach starts with unsupervised
+learning.</p></li>
+<li><p><strong>Messy data.</strong> The datasets differ in units,
+coverage and time span: NASA’s temperature record starts in 1880, NOAA’s
+CO₂ measurements in 1958, World Bank demographic series in 1960, and the
+COVID-19 data in 2020, so the pandemic is a single event.</p></li>
+</ol>
+<p>Our key question is: in which year does combined global stress peak,
+and does that year change under optimistic, baseline and pessimistic
+scenarios?</p>
+<h2 id="existing-solutions-and-limitations">Existing Solutions and
+Limitations</h2>
+<p>Most studies look at one domain only, such as climate, disasters or
+epidemics. Composite risk indices exist, for example the INFORM Risk
+Index (European Commission, Joint Research Centre, n.d.) and the
+WorldRiskIndex (Bündnis Entwicklung Hilft &amp; IFHV, 2025), but they
+are country-level snapshots. They do not give a long-run global time
+series, and they do not forecast a peak. The planetary boundaries
+framework (Rockström et al., 2009) is valuable but conceptual: it names
+limits, not timing.</p>
+<h2 id="our-contributions">Our Contributions</h2>
+<ol type="1">
+<li><p>A unified <strong>Global Stress Index</strong> for 1959–2024,
+built with PCA and an equal-weight combination of four domains.</p></li>
+<li><p><strong>Calm, stressed and crisis periods</strong> found
+automatically with K-means clustering and checked with semi-supervised
+label spreading.</p></li>
+<li><p>A <strong>scenario projection to 2100</strong> under optimistic,
+baseline and pessimistic climate trends, including the first year the
+index reaches crisis level.</p></li>
+<li><p>An honest <strong>evaluation</strong> with a time-based
+train/test split, compared with naive baselines, and a Random Forest
+ranking of which indicators matter most.</p></li>
+</ol>
+<p>The rest of this paper is organized as follows. The Related Works
+section reviews earlier global-risk models and the machine learning
+methods we build on. The Proposed Methodology section describes the
+data, the construction of the index, the clustering and forecasting
+methods, and the evaluation design. The Experiments and Result Analysis
+section reports the index, the periods, the scenario projections and the
+forecast errors. The Discussion section interprets these results and
+states their limits, and the Conclusion summarizes the findings and
+outlines future work.</p>
+<h1 class="sec" id="related-works">Related Works</h1>
+<p>Our project combines earlier ideas about global limits and risk with
+standard machine learning methods; none of the earlier work forecasts a
+peak of combined global stress.</p>
+<p><strong>The Limits to Growth.</strong> Meadows et al. (1972)
+simulated population, resource use and pollution over time. It was a
+model-based study that was not fitted to today’s multi-source
+observations. Later studies compared its scenarios with observed data
+(Herrington, 2021; Turner, 2008). These studies test a fixed simulation
+against data; we instead build a new index from observed series.</p>
+<p><strong>Planetary Boundaries.</strong> Rockström et al. (2009)
+defined safe limits for nine Earth-system processes. The framework gives
+thresholds but no timing and no peak-year forecast. The framework was
+updated by Steffen et al. (2015), and Richardson et al. (2023) estimated
+that six of the nine boundaries have been transgressed. These
+assessments describe how far each process is from its limit at one point
+in time, not how combined stress changes from year to year.</p>
+<p><strong>Composite Risk Indices.</strong> The INFORM Risk Index
+(European Commission, Joint Research Centre, n.d.) and the
+WorldRiskIndex (Bündnis Entwicklung Hilft &amp; IFHV, 2025) combine
+hazard, exposure and vulnerability. They are cross-sectional snapshots
+by country, not a unified global time series. The handbook of the OECD
+and the Joint Research Centre (OECD &amp; European Commission, Joint
+Research Centre, 2008) lists the usual steps for building a composite
+indicator: select indicators, normalize them, choose weights and
+aggregate. Cutter et al. (2003) used PCA to build a social vulnerability
+index from many variables. We follow these steps, with PCA for the
+climate domain and equal weights across domains.</p>
+<p><strong>Climate Scenarios.</strong> The IPCC Sixth Assessment Report
+(IPCC, 2021) provides detailed climate scenarios, but it covers the
+physical climate only, not health or demographics. We borrow its idea of
+comparing optimistic, baseline and pessimistic paths, with much simpler
+trend assumptions. The shared socioeconomic pathways (O’Neill et al.,
+2014) show how a small set of scenarios can bracket an uncertain future
+without assigning probabilities to each path, which is how we use our
+optimistic, baseline and pessimistic paths.</p>
+<p><strong>Machine Learning Methods.</strong> PCA (Jolliffe &amp;
+Cadima, 2016) compresses correlated indicators into a few components.
+K-means (Lloyd, 1982) groups observations without labels. Label
+spreading (Zhou et al., 2004) lets a few known labels propagate to
+similar unlabelled points. Random forests (Breiman, 2001) give accurate
+predictions and rank the importance of input variables.</p>
+<p><strong>Forecast Evaluation.</strong> Forecasting textbooks recommend
+testing a model on a later period and comparing it with simple
+benchmarks such as the mean and the last observed value (Hyndman &amp;
+Athanasopoulos, 2021). We follow both rules: a chronological split and
+two naive benchmarks.</p>
+<p><strong>The Gap.</strong> We combine disaster, climate, demographic
+and pandemic signals into one global yearly index and ask when it peaks,
+using these standard methods together. Composite risk indices lack a
+time dimension and a forecast, and global simulations are not built from
+observed series. Our contribution is to bring the two ideas together in
+the simplest form that still lets us ask when stress peaks.</p>
+<h1 class="sec" id="proposed-methodology">Proposed Methodology</h1>
+<p>We aligned public datasets to one yearly axis, built the index in two
+steps (PCA for the climate domain, then an equal-weight average of four
+domains), grouped the years, and evaluated forecasts on later years
+only. All code is in the project repository and uses Python with
+scikit-learn (Pedregosa et al., 2011).</p>
+<h2 id="data">Data</h2>
+<p><a href="#table-1">Table 1</a> lists the sources we actually used. Our proposal also named
+the USGS earthquake catalog, UN World Population Prospects, WHO and
+OpenAQ; we did not use them because the World Bank and Our World in Data
+cover the same indicators at world level.</p>
+<figure class="table" id="table-1"><figcaption><b>Table 1</b><span>Data Sources Used</span></figcaption><div class="scroll"><table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 40%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Domain</th>
+<th>Indicators</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Climate</td>
+<td>Global temperature anomaly (annual mean, °C)</td>
+<td>NASA GISTEMP (GISTEMP Team, n.d.; Lenssen et al., 2019)</td>
+</tr>
+<tr class="even">
+<td>Climate</td>
+<td>Atmospheric CO₂ (ppm, annual mean)</td>
+<td>NOAA Mauna Loa (NOAA Global Monitoring Laboratory, n.d.)</td>
+</tr>
+<tr class="odd">
+<td>Climate</td>
+<td>CO₂ per capita, methane, nitrous oxide, world population</td>
+<td>Our World in Data CO₂ data (Ritchie et al., 2023)</td>
+</tr>
+<tr class="even">
+<td>Mortality</td>
+<td>Crude death rate (per 1,000 people); birth rate and life expectancy
+were also cleaned</td>
+<td>World Bank (n.d.)</td>
+</tr>
+<tr class="odd">
+<td>Disasters</td>
+<td>Annual deaths from all natural disasters</td>
+<td>EM-DAT (CRED/UCLouvain, 2026) via Our World in Data (Ritchie et al.,
+2022)</td>
+</tr>
+<tr class="even">
+<td>Pandemic</td>
+<td>COVID-19 deaths per million people</td>
+<td>Our World in Data (Mathieu et al., 2020)</td>
+</tr>
+</tbody>
+</table></div></figure>
+<h2 id="preprocessing">Preprocessing</h2>
+<p>Every source was reduced to one row per year for 1959–2024. The range
+ends in 2024 because the OWID methane and nitrous oxide series end in
+2024 and 2025 is a partial year in EM-DAT. Missing values in smooth
+series were filled by linear interpolation. The World Bank series start
+in 1960, so 1959 repeats 1960. For disasters, a blank cell in EM-DAT
+means no recorded deaths, so we filled it with 0. Disaster and COVID-19
+deaths were divided by world population and log-transformed (log of 1
+plus the value), because a few extreme years otherwise dominate; the
+skewness of disaster deaths per million fell from 3.2 to 1.0. All
+indicators were then standardized with z-scores.</p>
+<p>Formally, let
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mrow><mi>j</mi><mo>,</mo><mi>t</mi></mrow></msub><annotation encoding="application/x-tex">x_{j,t}</annotation></semantics></math>
+be indicator
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>
+in year
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>.
+Deaths
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>d</mi><mi>t</mi></msub><annotation encoding="application/x-tex">d_{t}</annotation></semantics></math>
+were divided by world population
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>P</mi><mi>t</mi></msub><annotation encoding="application/x-tex">P_{t}</annotation></semantics></math>
+and log-transformed (Equation 1), and every indicator was then
+standardized with its mean
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>j</mi></msub><annotation encoding="application/x-tex">\mu_{j}</annotation></semantics></math>
+and standard deviation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>σ</mi><mi>j</mi></msub><annotation encoding="application/x-tex">\sigma_{j}</annotation></semantics></math>
+over 1959–2024 (Equation 2). The sign
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>s</mi><mi>j</mi></msub><annotation encoding="application/x-tex">s_{j}</annotation></semantics></math>
+is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">+ 1</annotation></semantics></math>
+when a higher value means more stress and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">- 1</annotation></semantics></math>
+otherwise, so that in every standardized series higher means more
+stress.</p>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mi>t</mi></msub><mo>=</mo><mo>ln</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>+</mo><msup><mn>10</mn><mn>6</mn></msup><mspace width="0.167em"></mspace><mfrac><msub><mi>d</mi><mi>t</mi></msub><msub><mi>P</mi><mi>t</mi></msub></mfrac><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">x_{t} = \ln\left( 1 + 10^{6}\,\frac{d_{t}}{P_{t}} \right)</annotation></semantics></math><span class="eqno">(1)</span></div>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>z</mi><mrow><mi>j</mi><mo>,</mo><mi>t</mi></mrow></msub><mo>=</mo><msub><mi>s</mi><mi>j</mi></msub><mspace width="0.167em"></mspace><mfrac><mrow><msub><mi>x</mi><mrow><mi>j</mi><mo>,</mo><mi>t</mi></mrow></msub><mo>−</mo><msub><mi>μ</mi><mi>j</mi></msub></mrow><msub><mi>σ</mi><mi>j</mi></msub></mfrac></mrow><annotation encoding="application/x-tex">z_{j,t} = s_{j}\,\frac{x_{j,t} - \mu_{j}}{\sigma_{j}}</annotation></semantics></math><span class="eqno">(2)</span></div>
+<p>We also removed redundant columns. Total CO₂ emissions and total
+greenhouse gases correlated at about 1.00 with other climate columns,
+and life expectancy correlated at about −0.97 with birth and death rates
+(Pearson <em>r</em>). Birth rate was left out of the stress index
+because a falling birth rate has no clear “stress” direction.</p>
+<h2 id="building-the-global-stress-index">Building the Global Stress
+Index</h2>
+<p>A single PCA over all indicators produced a first component that was
+mostly a time trend (it explained 76% of the variance), gave falling
+mortality and disaster deaths a negative loading, and ignored COVID-19.
+We therefore built the index in two steps:</p>
+<ol type="1">
+<li><p><strong>Climate score.</strong> PCA compressed the five climate
+indicators (temperature anomaly, CO₂ ppm, CO₂ per capita, methane,
+nitrous oxide) into one score. The first component explained 92.9% of
+their variance, with loadings between 0.42 and 0.46.</p></li>
+<li><p><strong>Equal-weight domains.</strong> The index is the average
+of four standardized domain scores: climate, mortality (death rate),
+disasters (log deaths per million) and pandemic (log COVID-19 deaths per
+million). Every score is oriented so that higher means more stress. The
+result was rescaled to 0–100 over 1959–2024.</p></li>
+</ol>
+<p>Let
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>v</mi><mi>j</mi></msub><annotation encoding="application/x-tex">v_{j}</annotation></semantics></math>
+be the first-component loading of climate indicator
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>.
+The climate score is the weighted sum of the five standardized climate
+indicators, standardized again with its own mean
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
+and standard deviation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>
+(Equation 3). The index averages the four domain scores
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>S</mi><mrow><mi>d</mi><mo>,</mo><mi>t</mi></mrow></msub><annotation encoding="application/x-tex">S_{d,t}</annotation></semantics></math>
+(Equation 4) and rescales the average to 0–100 over 1959–2024 (Equation
+5).</p>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>S</mi><mrow><mi>c</mi><mi>l</mi><mi>i</mi><mi>m</mi><mo>,</mo><mi>t</mi></mrow></msub><mo>=</mo><mfrac><mrow><msubsup><mo>∑</mo><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><mn>5</mn></msubsup><msub><mi>v</mi><mi>j</mi></msub><mspace width="0.167em"></mspace><msub><mi>z</mi><mrow><mi>j</mi><mo>,</mo><mi>t</mi></mrow></msub><mo>−</mo><mi>m</mi></mrow><mi>s</mi></mfrac></mrow><annotation encoding="application/x-tex">S_{clim,t} = \frac{\sum_{j = 1}^{5}v_{j}\, z_{j,t} - m}{s}</annotation></semantics></math><span class="eqno">(3)</span></div>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>S</mi><mo accent="true">‾</mo></mover><mi>t</mi></msub><mo>=</mo><mfrac><mn>1</mn><mn>4</mn></mfrac><msubsup><mo>∑</mo><mrow><mi>d</mi><mo>=</mo><mn>1</mn></mrow><mn>4</mn></msubsup><msub><mi>S</mi><mrow><mi>d</mi><mo>,</mo><mi>t</mi></mrow></msub></mrow><annotation encoding="application/x-tex">{\bar{S}}_{t} = \frac{1}{4}\sum_{d = 1}^{4}S_{d,t}</annotation></semantics></math><span class="eqno">(4)</span></div>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>I</mi><mi>t</mi></msub><mo>=</mo><mn>100</mn><mspace width="0.167em"></mspace><mfrac><mrow><msub><mover><mi>S</mi><mo accent="true">‾</mo></mover><mi>t</mi></msub><mo>−</mo><msub><mo>min</mo><mi>u</mi></msub><msub><mover><mi>S</mi><mo accent="true">‾</mo></mover><mi>u</mi></msub></mrow><mrow><msub><mo>max</mo><mi>u</mi></msub><msub><mover><mi>S</mi><mo accent="true">‾</mo></mover><mi>u</mi></msub><mo>−</mo><msub><mo>min</mo><mi>u</mi></msub><msub><mover><mi>S</mi><mo accent="true">‾</mo></mover><mi>u</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">I_{t} = 100\,\frac{{\bar{S}}_{t} - \min_{u}{\bar{S}}_{u}}{\max_{u}{\bar{S}}_{u} - \min_{u}{\bar{S}}_{u}}</annotation></semantics></math><span class="eqno">(5)</span></div>
+<h2 id="periods-and-label-spreading">Periods and Label Spreading</h2>
+<p>K-means with <em>k</em> = 3 grouped the years into calm, stressed and
+crisis periods, with <em>k</em> chosen by the elbow method and the
+silhouette score. As a semi-supervised check, we kept only the 20% most
+typical years of each period as known labels (14 of 66 years) and hid
+the rest. Label spreading (<em>k</em>-nearest-neighbour kernel, 5
+neighbours, α = 0.2) on the four domain scores then had to label the
+hidden years. A second label spreading model on the index value alone
+labelled future scenario years.</p>
+<p>K-means chooses the three periods
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>C</mi><mn>1</mn></msub><annotation encoding="application/x-tex">C_{1}</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>C</mi><mn>2</mn></msub><annotation encoding="application/x-tex">C_{2}</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>C</mi><mn>3</mn></msub><annotation encoding="application/x-tex">C_{3}</annotation></semantics></math>
+that minimize the within-period sum of squares around the mean index
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>k</mi></msub><annotation encoding="application/x-tex">\mu_{k}</annotation></semantics></math>
+of each period (Equation 6). Label spreading computes label scores
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>F</mi><mo>*</mo></msup><annotation encoding="application/x-tex">F^{*}</annotation></semantics></math>
+(Equation 7), where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Y</mi><annotation encoding="application/x-tex">Y</annotation></semantics></math>
+holds the known labels (zero for hidden years),
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐒</mi><annotation encoding="application/x-tex">\mathbf{S}</annotation></semantics></math>
+is the normalized
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-nearest-neighbour
+similarity matrix and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mn>0.2</mn></mrow><annotation encoding="application/x-tex">\alpha = 0.2</annotation></semantics></math>
+sets how strongly labels spread (Zhou et al., 2004). Each hidden year
+receives the period with the largest score.</p>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>min</mo><mrow><msub><mi>C</mi><mn>1</mn></msub><mo>,</mo><msub><mi>C</mi><mn>2</mn></msub><mo>,</mo><msub><mi>C</mi><mn>3</mn></msub></mrow></msub><mspace width="0.222em"></mspace><msubsup><mo>∑</mo><mrow><mi>k</mi><mo>=</mo><mn>1</mn></mrow><mn>3</mn></msubsup><mrow><msubsup><mo>∑</mo><mrow><mi>t</mi><mo>∈</mo><msub><mi>C</mi><mi>k</mi></msub></mrow><mrow></mrow></msubsup><msup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>I</mi><mi>t</mi></msub><mo>−</mo><msub><mi>μ</mi><mi>k</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup></mrow></mrow><annotation encoding="application/x-tex">\min_{C_{1},C_{2},C_{3}}\ \sum_{k = 1}^{3}{\sum_{t \in C_{k}}^{}\left( I_{t} - \mu_{k} \right)^{2}}</annotation></semantics></math><span class="eqno">(6)</span></div>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>F</mi><mo>*</mo></msup><mo>=</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo stretchy="true" form="postfix">)</mo></mrow><mspace width="0.167em"></mspace><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>𝐈</mi><mo>−</mo><mi>α</mi><mi>𝐒</mi><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mo>−</mo><mn>1</mn></mrow></msup><mi>Y</mi></mrow><annotation encoding="application/x-tex">F^{*} = (1 - \alpha)\,\left( \mathbf{I} - \alpha\mathbf{S} \right)^{- 1}Y</annotation></semantics></math><span class="eqno">(7)</span></div>
+<h2 id="trend-fits-and-scenarios">Trend Fits and Scenarios</h2>
+<p>We fitted linear, quadratic and cubic trends to the index and a
+Random Forest (300 trees) that predicts the index from each indicator
+one and two years earlier. For the scenarios, we extended each indicator
+with the linear trend of its last 20 years to 2100 and multiplied the
+slopes of the climate indicators by 0.5 (optimistic), 1.0 (baseline) and
+1.5 (pessimistic). Non-climate indicators were not allowed to fall below
+their historical minimum, and we assumed no new pandemic.</p>
+<p>For indicator
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>,
+let
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>a</mi><mi>j</mi></msub><mo>+</mo><msub><mi>b</mi><mi>j</mi></msub><mi>t</mi></mrow><annotation encoding="application/x-tex">a_{j} + b_{j}t</annotation></semantics></math>
+be the least-squares line through its last 20 standardized values and
+let
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mo>=</mo><mn>2024</mn></mrow><annotation encoding="application/x-tex">T = 2024</annotation></semantics></math>.
+Under scenario
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>
+the indicator is extended as in Equation 8, where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>m</mi><mi>s</mi></msub><annotation encoding="application/x-tex">m_{s}</annotation></semantics></math>
+is 0.5, 1.0 or 1.5 for climate indicators and 1 for all others.
+Non-climate indicators are then floored at their historical minimum, and
+the pandemic indicator is held at its minimum.</p>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>z</mi><mo accent="true">̂</mo></mover><mrow><mi>j</mi><mo>,</mo><mi>t</mi></mrow></msub><mo>=</mo><msub><mi>a</mi><mi>j</mi></msub><mo>+</mo><msub><mi>b</mi><mi>j</mi></msub><mi>T</mi><mo>+</mo><msub><mi>m</mi><mi>s</mi></msub><mspace width="0.167em"></mspace><msub><mi>b</mi><mi>j</mi></msub><mspace width="0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo>−</mo><mi>T</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mi>t</mi><mo>=</mo><mi>T</mi><mo>+</mo><mn>1</mn><mo>,</mo><mi>…</mi><mo>,</mo><mn>2100</mn></mrow><annotation encoding="application/x-tex">{\widehat{z}}_{j,t} = a_{j} + b_{j}T + m_{s}\, b_{j}\,(t - T),\quad t = T + 1,\ldots,2100</annotation></semantics></math><span class="eqno">(8)</span></div>
+<h2 id="evaluation">Evaluation</h2>
+<p>Models were trained on 1959–2015 (57 years, about 86% of the 66
+years) and tested on 2016–2024 (9 years, about 14%) with no shuffling,
+because a random split would let the model see years on both sides of
+each test year and make the errors look better than they are, and scored
+with mean absolute error (MAE) and root mean squared error (RMSE). Two
+naive guesses served as baselines: repeating the last training value and
+predicting the training mean. We also repeated the comparison on an
+index without the pandemic domain.</p>
+<p>With
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>y</mi><mi>t</mi></msub><annotation encoding="application/x-tex">y_{t}</annotation></semantics></math>
+the index and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mi>t</mi></msub><annotation encoding="application/x-tex">{\widehat{y}}_{t}</annotation></semantics></math>
+the prediction for the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>9</mn></mrow><annotation encoding="application/x-tex">n = 9</annotation></semantics></math>
+test years, the two error measures are given in Equations 9 and 10.</p>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi><mi>A</mi><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mi>n</mi></mfrac><msubsup><mo>∑</mo><mi>t</mi><mrow></mrow></msubsup><mrow><mo stretchy="true" form="prefix">|</mo><msub><mi>y</mi><mi>t</mi></msub><mo>−</mo><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mi>t</mi></msub><mo stretchy="true" form="postfix">|</mo></mrow></mrow><annotation encoding="application/x-tex">MAE = \frac{1}{n}\sum_{t}^{}\left| y_{t} - {\widehat{y}}_{t} \right|</annotation></semantics></math><span class="eqno">(9)</span></div>
+<div class="eq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mi>M</mi><mi>S</mi><mi>E</mi><mo>=</mo><msqrt><mrow><mfrac><mn>1</mn><mi>n</mi></mfrac><msubsup><mo>∑</mo><mi>t</mi><mrow></mrow></msubsup><msup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>y</mi><mi>t</mi></msub><mo>−</mo><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mi>t</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup></mrow></msqrt></mrow><annotation encoding="application/x-tex">RMSE = \sqrt{\frac{1}{n}\sum_{t}^{}\left( y_{t} - {\widehat{y}}_{t} \right)^{2}}</annotation></semantics></math><span class="eqno">(10)</span></div>
+<h2 id="software-and-reproducibility">Software and Reproducibility</h2>
+<p>The analysis is a modular Python pipeline (Appendix A, <a href="#table-A1">Table A1</a>).
+Each of the three team members cleaned the raw data for one part of the
+index and ran the models for it in a separate module: disasters and
+pandemic, climate, and mortality. Every module writes its result in the
+same format: one row per year for 1959–2024, a standardized and oriented
+column for each indicator, a standardized domain score, and a small file
+that records the weight and scenario rule of each indicator. A
+validation step rejects a file that breaks this format, so the modules
+can be developed in parallel and combined without manual editing. The
+combining script then builds the index, the periods, the scenarios and
+the evaluation from these files only.</p>
+<p>To keep the results repeatable, all settings (study window, train and
+test split, random seed 42, number of trees, label-spreading parameters
+and scenario multipliers) are stored in one configuration file. An
+automated test suite checks the cleaning rules, the file format and the
+main properties of the output, such as the 0–100 scale of the index and
+the order of the three scenarios.</p>
+<h1 class="sec" id="experiments-and-result-analysis">Experiments and Result
+Analysis</h1>
+<p>The index peaked in 2021, the scenarios keep rising to 2100, and the
+forecasting models were no better than naive guesses on the 2016–2024
+test years. This section shows each result in turn.</p>
+<h2 id="the-global-stress-index">The Global Stress Index</h2>
+<p><a href="#figure-1">Figure 1</a> shows the index on its 0–100 scale. It was highest in
+1959–1960 (79 and 88) and in 2020–2023 (about 89 to 100), with a peak of
+100 in 2021. Between these periods it stayed mostly below 40, with short
+spikes in years with very high recorded disaster deaths.</p>
+<figure class="figure" id="figure-1"><figcaption><b>Figure 1</b><span>Global Stress Index, 1959–2024 (0–100 Scale)</span></figcaption><img src="figures/fig1.png" alt="Line chart of the Global Stress Index from 1959 to 2024, high in 1959-1960 and 2020-2023, peaking at 100 in 2021" loading="lazy"></figure>
+<p><a href="#figure-2">Figure 2</a> splits the index into its four domain scores. The climate
+score rises steadily from about −1.9 in 1959 to +1.9 in 2024. The
+mortality score falls from 3.2 in 1959–1960 to about −1.0, and the
+disaster score is noisy with a slight downward drift. The pandemic score
+is flat until 2019 and reaches 4.6 in 2021. The early-1960s peak
+therefore comes from mortality and disasters, the 2021 peak from the
+pandemic, and the long rise in climate stress is hidden by falling
+mortality until the pandemic.</p>
+<figure class="figure" id="figure-2"><figcaption><b>Figure 2</b><span>Stress Score per Domain (Standardized, Higher Means More
+Stress)</span></figcaption><img src="figures/fig2.png" alt="Four lines showing the climate, mortality, disaster and pandemic stress scores from 1959 to 2024" loading="lazy"></figure>
+<h2 id="calm-stressed-and-crisis-periods">Calm, Stressed, and Crisis
+Periods</h2>
+<p>We chose <em>k</em> = 3 for interpretability (calm, stressed,
+crisis). <a href="#table-2">Table 2</a> shows that <em>k</em> = 2 has the highest silhouette
+score, but <em>k</em> = 3 is still a good separation (0.667) and the
+elbow in the inertia bends at <em>k</em> = 3.</p>
+<figure class="table" id="table-2"><figcaption><b>Table 2</b><span>K-Means Model Selection</span></figcaption><div class="scroll"><table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><em>k</em></th>
+<th>Inertia</th>
+<th>Silhouette</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2</td>
+<td>10,485</td>
+<td>0.715</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>4,428</td>
+<td>0.667</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>2,264</td>
+<td>0.606</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>1,358</td>
+<td>0.571</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>914</td>
+<td>0.593</td>
+</tr>
+</tbody>
+</table></div></figure>
+<p>With <em>k</em> = 3, the 66 years split into 45 calm, 15 stressed and
+6 crisis years (<a href="#figure-3">Figure 3</a>). The crisis years are 1959, 1960 and
+2020–2023; 2024 is stressed.</p>
+<figure class="figure" id="figure-3"><figcaption><b>Figure 3</b><span>Calm, Stressed, and Crisis Periods From K-Means (Green = Calm,
+Orange = Stressed, Red = Crisis)</span></figcaption><img src="figures/fig3.png" alt="The stress index by year, with each year coloured green, orange or red for calm, stressed or crisis" loading="lazy"></figure>
+<p>For the semi-supervised check, only 14 years were known (9 calm, 3
+stressed and 2 crisis); the other 52 were hidden. Label spreading
+recovered 88% of the hidden labels (46 of 52). <a href="#table-3">Table 3</a> shows where the
+two methods differ: 1959, 1960, 1974, 2003, 2005 and 2024. The
+early-1960s years were labelled stressed and not crisis, because the
+known crisis years are pandemic years and these years are driven by
+mortality instead. 2024, the year after the pandemic, was labelled calm
+because its four-domain pattern resembles recent calm years even though
+its index is 62.</p>
+<figure class="table" id="table-3"><figcaption><b>Table 3</b><span>Label Spreading Compared With K-Means on the 52 Hidden
+Years</span></figcaption><div class="scroll"><table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 23%" />
+<col style="width: 23%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>K-means label</th>
+<th>Spreading: calm</th>
+<th>Spreading: stressed</th>
+<th>Spreading: crisis</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Calm</td>
+<td>34</td>
+<td>2</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>Stressed</td>
+<td>2</td>
+<td>10</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>Crisis</td>
+<td>0</td>
+<td>2</td>
+<td>2</td>
+</tr>
+</tbody>
+</table></div></figure>
+<figure class="figure" id="figure-4"><figcaption><b>Figure 4</b><span>Periods Found by Label Spreading (Circled Years Are the Known
+Seed Years)</span></figcaption><img src="figures/fig4.png" alt="The stress index by year coloured by label spreading, with the 14 known seed years circled" loading="lazy"></figure>
+<h2 id="forecast-scenarios-to-2100">Forecast Scenarios to 2100</h2>
+<p>In all three scenarios the index is still rising in 2100, so there is
+no peak before 2100 (<a href="#table-4">Table 4</a>, <a href="#figure-5">Figure 5</a>). Only the baseline and
+pessimistic scenarios reach the crisis level seen in history, in about
+2083 and 2058. The drop from 62 in 2024 to about 38 in 2025 is a
+modelling assumption: the projection assumes no new pandemic, so the
+pandemic score returns to zero.</p>
+<figure class="table" id="table-4"><figcaption><b>Table 4</b><span>Scenario Results</span></figcaption><div class="scroll"><table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 23%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Scenario</th>
+<th>Climate trend multiplier</th>
+<th>Index in 2100</th>
+<th>First crisis-level year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Optimistic</td>
+<td>0.5</td>
+<td>52.5</td>
+<td>None by 2100</td>
+</tr>
+<tr class="even">
+<td>Baseline</td>
+<td>1.0</td>
+<td>87.1</td>
+<td>2083</td>
+</tr>
+<tr class="odd">
+<td>Pessimistic</td>
+<td>1.5</td>
+<td>121.8</td>
+<td>2058</td>
+</tr>
+</tbody>
+</table></div></figure>
+<figure class="figure" id="figure-5"><figcaption><b>Figure 5</b><span>Global Stress Index Projected to 2100 Under Three
+Scenarios</span></figcaption><img src="figures/fig5.png" alt="History in black and three projected scenario lines to 2100, all still rising, reaching about 52, 87 and 122" loading="lazy"></figure>
+<h2 id="model-evaluation">Model Evaluation</h2>
+<p><a href="#table-5">Table 5</a> compares the models with the naive guesses on the 2016–2024
+test years. On the full index, the best model (quadratic trend, MAE
+37.1) is slightly better than the naive guesses (MAE 41.1 and 41.8), and
+the Random Forest (MAE 41.3) is about as good as repeating the training
+mean. The reason is in the test window: the index sits at 10–14 in
+2016–2019 and then jumps to about 90–100 in 2020–2023, a pandemic that
+no model trained on 1959–2015 could foresee. Without the pandemic
+domain, the quadratic trend (MAE 11.6) is no better than repeating the
+last value (MAE 11.3). The models therefore have no demonstrated skill
+beyond a naive guess here, and we use the scenarios as trend
+projections, not as forecasts of a single year.</p>
+<figure class="table" id="table-5"><figcaption><b>Table 5</b><span>Test-Set Errors, 2016–2024</span></figcaption><div class="scroll"><table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 35%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Target</th>
+<th>Model</th>
+<th>MAE</th>
+<th>RMSE</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Full index</td>
+<td>Linear trend</td>
+<td>49.5</td>
+<td>63.9</td>
+</tr>
+<tr class="even">
+<td>Full index</td>
+<td>Quadratic trend</td>
+<td>37.1</td>
+<td>43.6</td>
+</tr>
+<tr class="odd">
+<td>Full index</td>
+<td>Cubic trend</td>
+<td>44.5</td>
+<td>58.8</td>
+</tr>
+<tr class="even">
+<td>Full index</td>
+<td>Random Forest (lags)</td>
+<td>41.3</td>
+<td>53.3</td>
+</tr>
+<tr class="odd">
+<td>Full index</td>
+<td>Naive: last value</td>
+<td>41.8</td>
+<td>54.3</td>
+</tr>
+<tr class="even">
+<td>Full index</td>
+<td>Naive: training mean</td>
+<td>41.1</td>
+<td>49.9</td>
+</tr>
+<tr class="odd">
+<td>Without pandemic</td>
+<td>Linear trend</td>
+<td>20.0</td>
+<td>25.0</td>
+</tr>
+<tr class="even">
+<td>Without pandemic</td>
+<td>Quadratic trend</td>
+<td>11.6</td>
+<td>13.2</td>
+</tr>
+<tr class="odd">
+<td>Without pandemic</td>
+<td>Cubic trend</td>
+<td>14.4</td>
+<td>19.9</td>
+</tr>
+<tr class="even">
+<td>Without pandemic</td>
+<td>Naive: last value</td>
+<td>11.3</td>
+<td>14.9</td>
+</tr>
+<tr class="odd">
+<td>Without pandemic</td>
+<td>Naive: training mean</td>
+<td>12.4</td>
+<td>13.5</td>
+</tr>
+</tbody>
+</table></div></figure>
+<p><em>Note.</em> MAE = mean absolute error; RMSE = root mean squared
+error. Errors are in index points on a 0–100 scale.</p>
+<h2 id="which-indicators-matter">Which Indicators Matter</h2>
+<p>The Random Forest ranks last year’s temperature anomaly highest
+(importance 0.188), followed by last year’s disaster score (0.156), the
+temperature anomaly two years back (0.138) and CO₂ per capita one year
+back (0.122). Climate indicators and the disaster score together carry
+most of the importance, and the death rate adds little (0.041 at best).
+This ranking should be read with care: the index is built from the same
+indicators, so the ranking is partly circular, and with 66 rows the
+importances are not stable.</p>
+<h1 class="sec" id="discussion">Discussion</h1>
+<h2 id="interpretation-of-the-index">Interpretation of the Index</h2>
+<p>The index behaves as its construction implies. Its two highest
+periods have different causes: the early 1960s reflect high mortality
+and large recorded disaster deaths, while 2020–2023 reflect the
+pandemic. In between, climate stress rose steadily but was offset by
+falling mortality, so the index stayed low until a single shock arrived.
+A composite of this kind can therefore hide a slow trend when a faster,
+opposing trend is present, which is why we show the four domain scores
+next to the index (<a href="#figure-2">Figure 2</a>). The 2021 peak should be read as the
+strongest single-year pressure in the record and not as the highest
+long-run risk.</p>
+<p>The scenarios make the opposite point. Once mortality and disaster
+stress reach their historical minimum and the pandemic is held at zero,
+the climate score is the only domain that keeps rising, so the projected
+index is driven almost entirely by the climate trend and the three
+scenarios differ only in how fast that trend continues. The values in
+2100 (about 52, 87 and 122) are consequences of this assumption and not
+independent evidence about the future.</p>
+<p>Label spreading reproduced 88% of the K-means labels from only 14
+known years, so the calm, stressed and crisis periods are fairly stable.
+The disagreements in <a href="#table-3">Table 3</a> are informative: they occur in years where
+the index value and the four-domain pattern point in different
+directions, such as 1959, 1960 and 2024.</p>
+<h2 id="comparison-with-earlier-work">Comparison With Earlier Work</h2>
+<p>Unlike the Limits to Growth simulations (Meadows et al., 1972), the
+index is built from observed series and assumes no structural equations,
+but for the same reason it cannot represent feedback between domains.
+Unlike the planetary boundaries (Rockström et al., 2009), it has a time
+dimension, but it defines no threshold for a safe level. Unlike the
+INFORM Risk Index and the WorldRiskIndex, it is global and not
+country-level, but it cannot show which regions are most exposed. The
+index is therefore a complement to these tools and not a
+replacement.</p>
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li><p>Disaster reporting is less complete in the early decades, and the
+1959–1961 values are very large.</p></li>
+<li><p>COVID-19 is a single pandemic event, and the test years 2016–2024
+contain it, so no model trained on earlier years could have anticipated
+it.</p></li>
+<li><p>The equal weight of four domains is a choice, not a result; other
+weights would change the index.</p></li>
+<li><p>The Random Forest importance ranking is partly circular, because
+the index is built from the same indicators, and we have only 66 yearly
+rows.</p></li>
+<li><p>The scenarios extend recent linear trends, assume no new pandemic
+and keep mortality and disaster stress at their historical minimum once
+they reach it. The index is scaled 0–100 over 1959–2024, so projected
+values can exceed 100.</p></li>
+<li><p>World Bank data starts in 1960, so 1959 repeats 1960.</p></li>
+<li><p>Three of the four domains are each represented by one indicator
+(death rate, disaster deaths and COVID-19 deaths), so any error or
+reporting bias in that series passes directly into the index.</p></li>
+<li><p>The 0–100 scale was set over the whole 1959–2024 window, so the
+test years help define the scale on which the models are scored. The
+models never see test values, but the scale would change if more years
+were added.</p></li>
+</ul>
+<h1 class="sec" id="conclusion">Conclusion</h1>
+<p>Combining climate, mortality, disaster and pandemic data gives one
+interpretable yearly stress index, and under our assumptions it has no
+peak before 2100.</p>
+<p>The most stressed observed year was 2021, driven by COVID-19, with a
+second high period in the early 1960s driven by mortality and disasters.
+Climate stress rises steadily across the whole record, while mortality
+and disaster stress fall. In the projections, the index is still rising
+in 2100 in all three scenarios, and it first reaches crisis level in
+about 2083 (baseline) and 2058 (pessimistic), but not before 2100 in the
+optimistic case. Label spreading from only 14 known years reproduced 88%
+of the K-means labels of the other years, so the calm, stressed and
+crisis periods are fairly stable. The forecasting models, however, did
+not clearly beat naive guesses, so we treat the scenarios as projections
+of trends and not as predictions.</p>
+<h2 id="future-work">Future Work</h2>
+<p>Future work could add the USGS earthquake catalog and air-quality
+data, test other domain weights, model shocks separately from trends
+(for example with detrended indicators), and compare against dedicated
+time-series models.</p>
+<p>This project is a data-driven hypothesis, not a prediction of an
+actual “end of the world.”</p>
+<h1 class="sec" id="references">References</h1>
+<p>Breiman, L. (2001). Random forests. <em>Machine Learning, 45</em>(1),
+5–32. https://doi.org/10.1023/A:1010933404324</p>
+<p>Bündnis Entwicklung Hilft &amp; Institute for International Law of
+Peace and Armed Conflict (IFHV). (2025). <em>WorldRiskReport 2025</em>.
+https://ifhv.de/research/projects/WorldRiskReport</p>
+<p>CRED/UCLouvain. (2026). <em>EM-DAT: The international disasters
+database</em> [Data set]. Centre for Research on the Epidemiology of
+Disasters, Université catholique de Louvain. https://emdat.be/</p>
+<p>Cutter, S. L., Boruff, B. J., &amp; Shirley, W. L. (2003). Social
+vulnerability to environmental hazards. <em>Social Science Quarterly,
+84</em>(2), 242–261. https://doi.org/10.1111/1540-6237.8402002</p>
+<p>European Commission, Joint Research Centre. (n.d.). <em>INFORM Risk
+Index</em> [Data set]. https://drmkc.jrc.ec.europa.eu/inform-index</p>
+<p>GISTEMP Team. (n.d.). <em>GISS surface temperature analysis
+(GISTEMP), version 4</em> [Data set]. NASA Goddard Institute for Space
+Studies. https://data.giss.nasa.gov/gistemp/</p>
+<p>Herrington, G. (2021). Update to limits to growth: Comparing the
+World3 model with empirical data. <em>Journal of Industrial Ecology,
+25</em>(3), 614–626. https://doi.org/10.1111/jiec.13084</p>
+<p>Hyndman, R. J., &amp; Athanasopoulos, G. (2021). <em>Forecasting:
+Principles and practice</em> (3rd ed.). OTexts.
+https://otexts.com/fpp3/</p>
+<p>IPCC. (2021). <em>Climate change 2021: The physical science basis.
+Contribution of Working Group I to the Sixth Assessment Report of the
+Intergovernmental Panel on Climate Change</em> (V. Masson-Delmotte, P.
+Zhai, A. Pirani, S. L. Connors, C. Péan, S. Berger, N. Caud, Y. Chen, L.
+Goldfarb, M. I. Gomis, M. Huang, K. Leitzell, E. Lonnoy, J. B. R.
+Matthews, T. K. Maycock, T. Waterfield, O. Yelekçi, R. Yu, &amp; B.
+Zhou, Eds.). Cambridge University Press.
+https://doi.org/10.1017/9781009157896</p>
+<p>Jolliffe, I. T., &amp; Cadima, J. (2016). Principal component
+analysis: A review and recent developments. <em>Philosophical
+Transactions of the Royal Society A, 374</em>(2065), Article 20150202.
+https://doi.org/10.1098/rsta.2015.0202</p>
+<p>Lenssen, N. J. L., Schmidt, G. A., Hansen, J. E., Menne, M. J.,
+Persin, A., Ruedy, R., &amp; Zyss, D. (2019). Improvements in the
+GISTEMP uncertainty model. <em>Journal of Geophysical Research:
+Atmospheres, 124</em>(12), 6307–6326.
+https://doi.org/10.1029/2018JD029522</p>
+<p>Lloyd, S. P. (1982). Least squares quantization in PCM. <em>IEEE
+Transactions on Information Theory, 28</em>(2), 129–137.
+https://doi.org/10.1109/TIT.1982.1056489</p>
+<p>Mathieu, E., Ritchie, H., Rodés-Guirao, L., Appel, C., Giattino, C.,
+Hasell, J., Macdonald, B., Dattani, S., Beltekian, D., Ortiz-Ospina, E.,
+&amp; Roser, M. (2020). <em>Coronavirus pandemic (COVID-19)</em>. Our
+World in Data. https://ourworldindata.org/coronavirus</p>
+<p>Meadows, D. H., Meadows, D. L., Randers, J., &amp; Behrens, W. W.,
+III. (1972). <em>The limits to growth</em>. Universe Books.</p>
+<p>NOAA Global Monitoring Laboratory. (n.d.). <em>Trends in atmospheric
+carbon dioxide</em> [Data set]. National Oceanic and Atmospheric
+Administration. https://gml.noaa.gov/ccgg/trends/</p>
+<p>OECD &amp; European Commission, Joint Research Centre. (2008).
+<em>Handbook on constructing composite indicators: Methodology and user
+guide</em>. OECD Publishing.
+https://doi.org/10.1787/9789264043466-en</p>
+<p>O’Neill, B. C., Kriegler, E., Riahi, K., Ebi, K. L., Hallegatte, S.,
+Carter, T. R., Mathur, R., &amp; van Vuuren, D. P. (2014). A new
+scenario framework for climate change research: The concept of shared
+socioeconomic pathways. <em>Climatic Change, 122</em>(3), 387–400.
+https://doi.org/10.1007/s10584-013-0905-2</p>
+<p>Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B.,
+Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V.,
+Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M.,
+&amp; Duchesnay, É. (2011). Scikit-learn: Machine learning in Python.
+<em>Journal of Machine Learning Research, 12</em>, 2825–2830.</p>
+<p>Richardson, K., Steffen, W., Lucht, W., Bendtsen, J., Cornell, S. E.,
+Donges, J. F., Drüke, M., Fetzer, I., Bala, G., von Bloh, W., Feulner,
+G., Fiedler, S., Gerten, D., Gleeson, T., Hofmann, M., Huiskamp, W.,
+Kummu, M., Mohan, C., Nogués-Bravo, D., ... Rockström, J. (2023). Earth
+beyond six of nine planetary boundaries. <em>Science Advances,
+9</em>(37), Article eadh2458. https://doi.org/10.1126/sciadv.adh2458</p>
+<p>Ritchie, H., Rosado, P., &amp; Roser, M. (2022). <em>Natural
+disasters</em>. Our World in Data.
+https://ourworldindata.org/natural-disasters</p>
+<p>Ritchie, H., Rosado, P., &amp; Roser, M. (2023). <em>CO₂ and
+greenhouse gas emissions</em>. Our World in Data.
+https://ourworldindata.org/co2-and-greenhouse-gas-emissions</p>
+<p>Rockström, J., Steffen, W., Noone, K., Persson, Å., Chapin, F. S.,
+III, Lambin, E. F., Lenton, T. M., Scheffer, M., Folke, C.,
+Schellnhuber, H. J., Nykvist, B., de Wit, C. A., Hughes, T., van der
+Leeuw, S., Rodhe, H., Sörlin, S., Snyder, P. K., Costanza, R., Svedin,
+U., … Foley, J. A. (2009). A safe operating space for humanity.
+<em>Nature, 461</em>(7263), 472–475. https://doi.org/10.1038/461472a</p>
+<p>Steffen, W., Richardson, K., Rockström, J., Cornell, S. E., Fetzer,
+I., Bennett, E. M., Biggs, R., Carpenter, S. R., de Vries, W., de Wit,
+C. A., Folke, C., Gerten, D., Heinke, J., Mace, G. M., Persson, L. M.,
+Ramanathan, V., Reyers, B., &amp; Sörlin, S. (2015). Planetary
+boundaries: Guiding human development on a changing planet. <em>Science,
+347</em>(6223), Article 1259855.
+https://doi.org/10.1126/science.1259855</p>
+<p>Turner, G. M. (2008). A comparison of The Limits to Growth with 30
+years of reality. <em>Global Environmental Change, 18</em>(3), 397–411.
+https://doi.org/10.1016/j.gloenvcha.2008.05.001</p>
+<p>World Bank. (n.d.). <em>World development indicators</em> [Data set].
+https://data.worldbank.org/</p>
+<p>Zhou, D., Bousquet, O., Lal, T. N., Weston, J., &amp; Schölkopf, B.
+(2004). Learning with local and global consistency. In S. Thrun, L.
+Saul, &amp; B. Schölkopf (Eds.), <em>Advances in neural information
+processing systems</em> (Vol. 16, pp. 321–328). MIT Press.</p>
+<h1 class="sec" id="appendix-a">Appendix A</h1>
+<p><strong>Project Modules and Hand-off Format</strong></p>
+<p>Table A1 lists what each module does and what it writes. Each module
+can be run on its own, so a team member can test and report their part
+without waiting for the others.</p>
+<figure class="table" id="table-A1"><figcaption><b>Table A1</b><span>Project Modules, Commands and Methods</span></figcaption><div class="scroll"><table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 33%" />
+<col style="width: 20%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Module</th>
+<th>Command</th>
+<th>Writes</th>
+<th>Methods run</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Disasters and pandemic</td>
+<td>python -m modules.disasters_pandemics</td>
+<td>disasters, pandemic</td>
+<td>Log deaths per million; trend fits; naive baselines; Random Forest
+on lags; K-means model selection</td>
+</tr>
+<tr class="even">
+<td>Climate</td>
+<td>python -m modules.climate</td>
+<td>climate</td>
+<td>Redundancy check; PCA (five indicators to one score); same trend,
+baseline, Random Forest and K-means set</td>
+</tr>
+<tr class="odd">
+<td>Mortality</td>
+<td>python -m modules.demographics</td>
+<td>mortality</td>
+<td>Redundancy check of birth rate, death rate and life expectancy; same
+trend, baseline, Random Forest and K-means set</td>
+</tr>
+<tr class="even">
+<td>Combining script</td>
+<td>python combine.py</td>
+<td>index, periods, scenarios, test errors, figures</td>
+<td>Index; K-means; label spreading; scenario projection; trend fits and
+Random Forest on the index</td>
+</tr>
+</tbody>
+</table></div></figure>
+<p><em>Note.</em> All modules read their settings from one configuration
+file and write one row per year for 1959–2024.</p>
+
+</main></div>
+<footer class="foot">Woosong University · Introduction to Machine Learning · Fall 2026</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

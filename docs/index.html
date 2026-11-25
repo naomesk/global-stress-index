@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Global Stress Index</title>
+<meta name="description" content="Team project site: report and guide for the Global Stress Index, 1959-2024.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="home">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <a class="brand" href="index.html">Global Stress Index</a>
+  <nav aria-label="Site">
+    <a href="report.html">Report</a>
+    <a href="guide.html">Team guide</a>
+    <a href="downloads/End_of_the_World_Report.docx">Word file</a>
+    <a class="repo" href="#" data-repo>Code</a>
+  </nav>
+</header>
+<main id="main">
+<section class="hero">
+<h1>When does global stress peak?</h1>
+<p class="lede">One yearly index for 1959&ndash;2024 built from climate, mortality, disaster and pandemic data, then projected to 2100 under three climate scenarios. Three students, three modules, one report.</p>
+<p class="actions"><a class="btn primary" href="report.html">Read the report</a><a class="btn" href="guide.html">Team guide</a><a class="btn" href="downloads/End_of_the_World_Report.docx">Word file</a><a class="btn" href="#" data-repo>Code on GitHub</a></p>
+<figure class="recorder"><img src="figures/fig1.png" alt="Line chart of the Global Stress Index from 1959 to 2024, high in 1959-1960 and 2020-2023, peaking at 100 in 2021" width="1200" height="608">
+<figcaption>Figure 1 from the report: the Global Stress Index on a 0&ndash;100 scale. It peaks in 2021, the COVID-19 pandemic.</figcaption></figure>
+</section>
+<section class="band">
+<h2>What we found</h2>
+<table class="findings"><tbody>
+<tr><th>Periods (K-means, 3 groups)</th><td>45 calm years, 15 stressed years, 6 crisis years.</td></tr>
+<tr><th>Label spreading</th><td>Started from 14 known years and recovered 88% of the labels of the other 52 years.</td></tr>
+<tr><th>Peak so far</th><td>2021, driven by the pandemic score. The early-1960s high comes from mortality and disasters; the long rise in climate stress is steady.</td></tr>
+<tr><th>Scenarios to 2100</th><td>Optimistic, baseline and pessimistic reach about 52, 87 and 122 points on the historical 0&ndash;100 scale. No scenario peaks before 2100.</td></tr>
+<tr><th>First crisis-level year</th><td>About 2083 (baseline) and 2058 (pessimistic); not before 2100 in the optimistic scenario.</td></tr>
+<tr><th>Forecast accuracy</th><td>On the 2016&ndash;2024 test years the trend and Random Forest models did not clearly beat naive guesses, because the test window holds the only pandemic.</td></tr>
+</tbody></table>
+<p class="caveat">This is a data-driven hypothesis, not a prediction of a real &ldquo;end of the world.&rdquo; The report lists its limits in the Discussion.</p>
+</section>
+<section class="band">
+<h2>How the project fits together</h2>
+<div class="two">
+<div><h3>Four domains, one score each</h3><p>Climate (five indicators compressed by PCA), mortality, disasters and pandemic. Each is standardized so higher always means more stress, then averaged with equal weight.</p></div>
+<div><h3>One shared hand-off format</h3><p>Every module writes the same two files, so the three members work in parallel and the integrator combines them with one command.</p></div>
+<div><h3>Reproducible</h3><p>Settings live in one config file, the seed is fixed, and a test suite checks the pipeline. The <a href="guide.html">team guide</a> shows how to run it and how to bring in a module that does not follow the format.</p></div>
+</div>
+</section>
+</main>
+<footer class="foot">Woosong University · Introduction to Machine Learning · Fall 2026</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>
