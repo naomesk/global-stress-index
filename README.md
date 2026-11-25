@@ -11,11 +11,9 @@ Each member works on **their own branch**, created in advance. Do not commit to 
 
 | Member | Domain | Module file | Branch |
 |---|---|---|---|
-| Integrator | disasters, pandemic | `modules/disasters_pandemics.py` | `disasters-pandemics` |
-| Climate | climate | `modules/climate.py` | `climate` |
-| Birth and death rates | mortality | `modules/demographics.py` | `mortality` |
-
-(If the branch names on GitHub differ from this table, use the names on GitHub and fix the table.)
+| Integrator | disasters, pandemic | `modules/disasters_pandemics.py` | `naomi-disasters-pandemics` |
+| Climate | climate | `modules/climate.py` | `nur-climate` |
+| Birth and death rates | mortality | `modules/demographics.py` | `noe-demographics` |
 
 ## What to upload to your branch
 
