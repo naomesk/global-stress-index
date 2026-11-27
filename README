@@ -1,0 +1,16 @@
+Birth Rate and Death Rate Analysis
+
+Project Overview
+
+This project focuses on analyzing crude birth rates and crude death rates across different countries over time.
+
+The objective is to explore demographic trends, understand population changes, and identify potential relationships between birth rates and death rates.
+
+Datasets
+
+Two datasets are currently being used:
+
+crude-birth-rate.csv: Contains crude birth rate data for 253 entities from 1950 to 2023.
+
+crude-death-rate.csv: Contains annual crude death rate data for 253 entities from 1950 to 2023.
+
